@@ -2,18 +2,19 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from math import floor
 
 # Paths
 img_path = "./imgs"
 save_path = "./extracted/"
+fail_path = "./fails/"
 example_path = './imgs/GM21079S1K2.JPG'
-# example_path = './imgs/GM50115AS1K5.jpg'
 
+# Arguments
 structure = np.array([5, 7, 6, 5]) * 2 # amount of chromosomes for each line
-# x/y chromosomes are saved as the "24th" chromsome, easier to read
-chromosome_tags = np.array(range(1,24)) 
+chromosome_tags = np.array(range(1,24)) # basically the name that the ordered chromosomes are going to get, i.e. 1-23
 
-# Algorithm Parameters
+pair = False # True, if chromosome pairs should be extracted
 bkg_threshold = 253 # background threshold parameter
 min_volume = 0.0005 # minimum density of a component to be a chromosome
 
@@ -124,7 +125,7 @@ def extract_bounding_boxes(oh_labels, padding=2):
         boxes[:,i] = extract_bounding_box(oh_labels[:,:,i], padding=padding)
     return boxes
 
-def extract_bounding_box(img, padding=2):
+def extract_bounding_box(img, padding=0):
     """ Extract the bounding box params for a binary mask.
         Found on: https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
     """
@@ -135,19 +136,37 @@ def extract_bounding_box(img, padding=2):
 
     return np.array([rmin-padding, rmax+padding, cmin-padding, cmax+padding], dtype="int")
 
-def extract_and_save_chromsomes(path, bounding_boxes, save_path=save_path, tags=chromosome_tags):
+def extract_and_save_chromsomes(path, bounding_boxes, paired=pair, save_path=save_path, tags=chromosome_tags):
+    """ Extracts chromosomes given an image path and bounding boxes
+    """
     img = cv.imread(path)
     fname, ftype = path.split("/")[-1].split('.')
 
-    for i in range(bounding_boxes.shape[1]):
-        rmin, rmax, cmin, cmax = bounding_boxes[:,i]
-        chromosome = img[rmin:rmax, cmin:cmax]
-        print(i)
-        print(rmin, rmax, cmin, cmax)
-        print(np.sum(chromosome))
-        fn = "{0}_{1}.{2}".format(fname, tags[i], ftype)
-        file_path = save_path + fn
-        cv.imwrite(file_path, chromosome)
+    if paired:
+        for i in range(len(tags)):
+            rmin, rmax, cmin, cmax = bounding_boxes[:,i]
+            chromosome = img[rmin:rmax, cmin:cmax]
+            chrom_num = 12
+            fn = "{0}_{1}_{2}.{3}".format(tags[i], str(chrom_num), fname, ftype)
+            file_path = save_path + fn
+            cv.imwrite(file_path, chromosome)
+    else:
+        for i in range(len(tags)*2):
+            rmin, rmax, cmin, cmax = bounding_boxes[:,i]
+            chromosome = img[rmin:rmax, cmin:cmax]
+            chrom_num = (i % 2) + 1
+            tag_num = floor(i/2)
+            fn = "{0}_{1}_{2}.{3}".format(tags[tag_num], str(chrom_num), fname, ftype)
+            file_path = save_path + fn
+            cv.imwrite(file_path, chromosome)
+
+
+def fail_save(one_hot_labels, centroids, bounding_boxes, path):
+    """ Handler for images that have != 46 chromosomes, 
+    """
+    print("46 Chromosome have have to be detected, but {0} were detected. " \
+            "This could also be due to noise or letters in the image.".format(one_hot_labels.shape[2]))
+    imshow_components(one_hot_labels, centroids, bounding_boxes)
 
 def imshow_components(labels, centroids=None, bounding_boxes=None):
 
@@ -193,20 +212,22 @@ def extract_chromosome_bounding_boxes(path):
     num_labels, labels_im = get_labels(path)
     one_hot_labels = make_one_hot_labels(num_labels, labels_im)
     one_hot_labels = filter_labels(one_hot_labels)
+    centroids = extract_label_centroids(one_hot_labels)
+    oh_labels = order_components(one_hot_labels, centroids) # order
+
+    if pair:
+        oh_labels = pair_components(oh_labels) # pair them up
+    
+    # TODO: Potentially add mophlogical dilation
+    bounding_boxes = extract_bounding_boxes(oh_labels)
 
     if one_hot_labels.shape[2] != 46:
-        print("46 Chromosome have have to be detected, but {0} were detected. " \
-            "This could also be due to noise or letters in the image.".format(one_hot_labels.shape[2]))
-        imshow_components(one_hot_labels)
+        fail_save(one_hot_labels, centroids, bounding_boxes, path)
         return
 
-    centroids = extract_label_centroids(one_hot_labels)
-    ordered_oh_labels = order_components(one_hot_labels, centroids)
-    paired_oh_labels = pair_components(ordered_oh_labels)
-    bounding_boxes = extract_bounding_boxes(paired_oh_labels)
     extract_and_save_chromsomes(path, bounding_boxes)
+    imshow_components(one_hot_labels, centroids, bounding_boxes)
 
-    imshow_components(paired_oh_labels, centroids, bounding_boxes)
 
 
 if __name__ == "__main__":
