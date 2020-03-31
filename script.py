@@ -1,3 +1,4 @@
+import os
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +9,6 @@ from math import floor
 img_path = "./imgs"
 save_path = "./extracted/"
 fail_path = "./fails/"
-example_path = './imgs/GM21079S1K2.JPG'
 
 # Arguments
 structure = np.array([5, 7, 6, 5]) * 2 # amount of chromosomes for each line
@@ -161,14 +161,14 @@ def extract_and_save_chromsomes(path, bounding_boxes, paired=pair, save_path=sav
             cv.imwrite(file_path, chromosome)
 
 
-def fail_save(one_hot_labels, centroids, bounding_boxes, path):
+def fail_save(one_hot_labels, centroids, path):
     """ Handler for images that have != 46 chromosomes, 
     """
-    print("46 Chromosome have have to be detected, but {0} were detected. " \
+    print("  46 Chromosome have have to be detected, but {0} were detected. " \
             "This could also be due to noise or letters in the image.".format(one_hot_labels.shape[2]))
-    imshow_components(one_hot_labels, centroids, bounding_boxes)
+    visualise_components(one_hot_labels, show=False, save_path=path, centroids=centroids)
 
-def imshow_components(labels, centroids=None, bounding_boxes=None):
+def visualise_components(labels, show=True, save_path=None, centroids=None, bounding_boxes=None):
 
     bkg = np.sum(labels, axis=-1) == 0
     bkg = np.expand_dims(bkg, axis=-1)
@@ -203,32 +203,41 @@ def imshow_components(labels, centroids=None, bounding_boxes=None):
         for i in range(bounding_boxes.shape[1]):
             rect = patches.Rectangle((x[i], y[i]), w[i], h[i], linewidth=1,edgecolor='r',facecolor='none')
             ax.add_patch(rect)
-            
-    plt.show()
+    
+    if save_path is not None:
+        save_path = save_path.replace('jfif', 'jpg') # jfif not supported...
+        plt.savefig(save_path)
+    
+    if show:
+        plt.show()
 
 
-def extract_chromosome_bounding_boxes(path):
-
+def process_chromosome(path, file_name):
     num_labels, labels_im = get_labels(path)
     one_hot_labels = make_one_hot_labels(num_labels, labels_im)
     one_hot_labels = filter_labels(one_hot_labels)
     centroids = extract_label_centroids(one_hot_labels)
+    
+    if one_hot_labels.shape[2] != 46:
+        path = os.path.join(fail_path, file_name)
+        fail_save(one_hot_labels, centroids, path)
+        return
+    
     oh_labels = order_components(one_hot_labels, centroids) # order
-
     if pair:
         oh_labels = pair_components(oh_labels) # pair them up
-    
     # TODO: Potentially add mophlogical dilation
     bounding_boxes = extract_bounding_boxes(oh_labels)
 
-    if one_hot_labels.shape[2] != 46:
-        fail_save(one_hot_labels, centroids, bounding_boxes, path)
-        return
-
     extract_and_save_chromsomes(path, bounding_boxes)
-    imshow_components(one_hot_labels, centroids, bounding_boxes)
 
-
+def process_chromosomes():
+    file_names = os.listdir(img_path)
+    for name in file_names:
+        print("Processing: " + str(name))
+        file_path = os.path.join(img_path, name)
+        process_chromosome(file_path, name)
 
 if __name__ == "__main__":
-    extract_chromosome_bounding_boxes(example_path)
+    # extract_chromosome_bounding_boxes(example_path)
+    process_chromosomes()
