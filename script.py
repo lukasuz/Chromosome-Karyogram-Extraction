@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 from math import floor
 
 # Paths
-img_path = "./imgs"
+img_path = "./imgs_all"
 save_path = "./extracted/"
 fail_path = "./fails/"
 
@@ -15,15 +15,21 @@ structure = np.array([5, 7, 6, 5]) * 2 # amount of chromosomes for each line
 chromosome_tags = np.array(range(1,24)) # basically the name that the ordered chromosomes are going to get, i.e. 1-23
 
 pair = False # True, if chromosome pairs should be extracted
-bkg_threshold = 253 # background threshold parameter
-min_volume = 0.0005 # minimum density of a component to be a chromosome
+min_volume = 0.0003 # minimum density of a component to be a chromosome
+
+morphological_kernel = np.ones((3, 3), np.uint8)
 
 def get_labels(path):
     """ Read a chromosome image and returns its connected component labels mat
     """
     img = cv.imread(path, 0)
-    img = cv.threshold(img, bkg_threshold, 255, cv.THRESH_BINARY)[1]
+    # Thresholding seems
+    avg = np.average(img) 
+    img = cv.threshold(img, avg - 1, 255, cv.THRESH_BINARY)[1]
+    # Flip values
     img = 255 - img
+    # Morph. Opening for removing noise and detaching chromosomes
+    img = cv.morphologyEx(img, cv.MORPH_OPEN, morphological_kernel)
     num_labels, labels_im  = cv.connectedComponents(img, connectivity=8)
 
     return num_labels, labels_im
@@ -141,6 +147,7 @@ def extract_and_save_chromsomes(path, bounding_boxes, paired=pair, save_path=sav
     """
     img = cv.imread(path)
     fname, ftype = path.split("/")[-1].split('.')
+    ftype = 'png' # just save everything as png, not o.g. format
 
     if paired:
         for i in range(len(tags)):
@@ -211,6 +218,7 @@ def visualise_components(labels, show=True, save_path=None, centroids=None, boun
     if show:
         plt.show()
 
+    plt.close()
 
 def process_chromosome(path, file_name):
     num_labels, labels_im = get_labels(path)
@@ -219,14 +227,14 @@ def process_chromosome(path, file_name):
     centroids = extract_label_centroids(one_hot_labels)
     
     if one_hot_labels.shape[2] != 46:
-        path = os.path.join(fail_path, file_name)
-        fail_save(one_hot_labels, centroids, path)
+        # file_name = "fail_" + file_name
+        f_path = os.path.join(fail_path, file_name)
+        fail_save(one_hot_labels, centroids, f_path)
         return
     
     oh_labels = order_components(one_hot_labels, centroids) # order
     if pair:
         oh_labels = pair_components(oh_labels) # pair them up
-    # TODO: Potentially add mophlogical dilation
     bounding_boxes = extract_bounding_boxes(oh_labels)
 
     extract_and_save_chromsomes(path, bounding_boxes)
