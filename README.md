@@ -45,3 +45,14 @@ Here you can see some example for some successful and failed extractions. The im
 An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single $+$ and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find to find the optimal set of parameters for every type of chromosome.
 
 ![NHGRI_human_male_karyotype](./fails/NHGRI_human_male_karyotype.png)
+
+
+
+## Naming Convention
+ Extracted chromosomes are named in the following manner:
+
+**A_B_CCCC.jpg**
+
+  - A is the chromosome number from 1 to 23, where no. 23 is either X or Y chromosome (no differentiation between both is currently done.)
+  - B shows encodes if it is the left (=1) or the right (=2) chromosome of the pair. If chromosomes pairs are extracted B=12
+  - CCCC the original karyogram file name where the chromosomes were extracted from
