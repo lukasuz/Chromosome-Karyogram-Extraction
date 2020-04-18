@@ -6,18 +6,21 @@ import matplotlib.patches as patches
 from math import floor
 
 # Paths
-img_path = "./imgs_all"
+img_path = "./imgs"
 save_path = "./extracted/"
 fail_path = "./fails/"
 
 # Arguments
+pair = False # True, if chromosome pairs should be extracted
+min_volume = 0.0003 # minimum density of a component to be a chromosome
+padding = 2 # padding around chromosome for bounding box
+
 structure = np.array([5, 7, 6, 5]) * 2 # amount of chromosomes for each line
 chromosome_tags = np.array(range(1,24)) # basically the name that the ordered chromosomes are going to get, i.e. 1-23
 
-pair = False # True, if chromosome pairs should be extracted
-min_volume = 0.0003 # minimum density of a component to be a chromosome
-
-morphological_kernel = np.ones((3, 3), np.uint8)
+opening_kernel = np.ones((3,3), np.uint8)
+# erosion_kernel = np.ones((7,1), np.uint8)
+# dilation_kernel = erosion_kernel
 
 def get_labels(path):
     """ Read a chromosome image and returns its connected component labels mat
@@ -29,7 +32,8 @@ def get_labels(path):
     # Flip values
     img = 255 - img
     # Morph. Opening for removing noise and detaching chromosomes
-    img = cv.morphologyEx(img, cv.MORPH_OPEN, morphological_kernel)
+    img = cv.morphologyEx(img, cv.MORPH_OPEN, opening_kernel)
+    # img = cv.morphologyEx(img, cv.MORPH_ERODE, erosion_kernel)
     num_labels, labels_im  = cv.connectedComponents(img, connectivity=8)
 
     return num_labels, labels_im
@@ -122,7 +126,7 @@ def pair_components(oh_labels):
         paired[:,:,int(i/2)] = oh_labels[:,:,i] + oh_labels[:,:,i+1]
     return paired
 
-def extract_bounding_boxes(oh_labels, padding=2):
+def extract_bounding_boxes(oh_labels, padding=padding):
     """ Extracts the bounding box parameters for the chromosome labels
     TODO: fix so padding does not go out of img
     """
@@ -142,17 +146,25 @@ def extract_bounding_box(img, padding=0):
 
     return np.array([rmin-padding, rmax+padding, cmin-padding, cmax+padding], dtype="int")
 
-def extract_and_save_chromsomes(path, bounding_boxes, paired=pair, save_path=save_path, tags=chromosome_tags):
+def extract_and_save_chromsomes(path, bounding_boxes, oh_labels, paired=pair, save_path=save_path, tags=chromosome_tags):
     """ Extracts chromosomes given an image path and bounding boxes
     """
     img = cv.imread(path)
-    fname, ftype = path.split("/")[-1].split('.')
+    temp = path.split("/")[-1]
+    fname, ftype = os.path.splitext(temp)
     ftype = 'png' # just save everything as png, not o.g. format
 
     if paired:
         for i in range(len(tags)):
             rmin, rmax, cmin, cmax = bounding_boxes[:,i]
-            chromosome = img[rmin:rmax, cmin:cmax]
+            mask = np.zeros((oh_labels.shape[0], oh_labels.shape[1], 3))
+            mask[:,:,0] = mask[:,:,1] = mask [:,:,2] = oh_labels[:,:,i]
+            mask = mask.astype('uint8')
+
+            chromosome = np.copy(img)
+            chromosome = chromosome * mask + 255 * (1-mask)
+            chromosome = chromosome[rmin:rmax, cmin:cmax]
+
             chrom_num = 12
             fn = "{0}_{1}_{2}.{3}".format(tags[i], str(chrom_num), fname, ftype)
             file_path = save_path + fn
@@ -160,7 +172,14 @@ def extract_and_save_chromsomes(path, bounding_boxes, paired=pair, save_path=sav
     else:
         for i in range(len(tags)*2):
             rmin, rmax, cmin, cmax = bounding_boxes[:,i]
-            chromosome = img[rmin:rmax, cmin:cmax]
+            mask = np.zeros((oh_labels.shape[0], oh_labels.shape[1], 3))
+            mask[:,:,0] = mask[:,:,1] = mask [:,:,2] = oh_labels[:,:,i]
+            mask = mask.astype('uint8')
+            
+            chromosome = np.copy(img)
+            chromosome = chromosome * mask + 255 * (1-mask)
+            chromosome = chromosome[rmin:rmax, cmin:cmax]
+
             chrom_num = (i % 2) + 1
             tag_num = floor(i/2)
             fn = "{0}_{1}_{2}.{3}".format(tags[tag_num], str(chrom_num), fname, ftype)
@@ -208,7 +227,7 @@ def visualise_components(labels, show=True, save_path=None, centroids=None, boun
         # plt.plot(bounding_boxes[0,:], bounding_boxes[2,:], 'r+')
         ax = plt.gca()
         for i in range(bounding_boxes.shape[1]):
-            rect = patches.Rectangle((x[i], y[i]), w[i], h[i], linewidth=1,edgecolor='r',facecolor='none')
+            rect = patches.Rectangle((x[i], y[i]), w[i], h[i], linewidth=1, edgecolor='r', facecolor='none')
             ax.add_patch(rect)
     
     if save_path is not None:
@@ -224,10 +243,10 @@ def process_chromosome(path, file_name):
     num_labels, labels_im = get_labels(path)
     one_hot_labels = make_one_hot_labels(num_labels, labels_im)
     one_hot_labels = filter_labels(one_hot_labels)
+    
     centroids = extract_label_centroids(one_hot_labels)
     
     if one_hot_labels.shape[2] != 46:
-        # file_name = "fail_" + file_name
         f_path = os.path.join(fail_path, file_name)
         fail_save(one_hot_labels, centroids, f_path)
         return
@@ -237,7 +256,7 @@ def process_chromosome(path, file_name):
         oh_labels = pair_components(oh_labels) # pair them up
     bounding_boxes = extract_bounding_boxes(oh_labels)
 
-    extract_and_save_chromsomes(path, bounding_boxes)
+    extract_and_save_chromsomes(path, bounding_boxes, oh_labels)
 
 def process_chromosomes():
     file_names = os.listdir(img_path)
@@ -247,5 +266,4 @@ def process_chromosomes():
         process_chromosome(file_path, name)
 
 if __name__ == "__main__":
-    # extract_chromosome_bounding_boxes(example_path)
     process_chromosomes()
