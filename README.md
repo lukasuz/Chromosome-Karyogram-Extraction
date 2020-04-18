@@ -14,7 +14,7 @@ Three folders are needed: A source folder where the karyograms are located, a fo
 
 **pair:** True, if chromosome pairs are supposed to be extracted. False for single chromosomes.
 
-**min_volume:** The minimum pixel volume a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
+**min_volume:** The minimum pixel volume a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy 0.003% of the images pixels.
 
 **padding:** Padding around the chromosomes.
 
@@ -42,7 +42,7 @@ Here you can see some example for some successful and failed extractions. The im
 
 ### Failed Extraction
 
-An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single $+$ and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find to find the optimal set of parameters for every type of chromosome.
+An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single + and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find to find the optimal set of parameters for every type of chromosome.
 
 ![NHGRI_human_male_karyotype](./fails/NHGRI_human_male_karyotype.png)
 
