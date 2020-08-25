@@ -56,3 +56,16 @@ An example of a failed extraction. We can see that chromosome three was detected
   - A is the chromosome number from 1 to 23, where no. 23 is either X or Y chromosome (no differentiation between both is currently done.)
   - B shows encodes if it is the left (=1) or the right (=2) chromosome of the pair. If chromosomes pairs are extracted B=12
   - CCCC the original karyogram file name where the chromosomes were extracted from
+  
+ ## Citation
+ If you find this project helpful, please cite as:
+```
+ @misc{UzolasKaryogram2020,
+  author = {Uzolas, L.},
+  title = {Chromosome-Karyogram-Extraction},
+  year = {2020},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/lukasuz/Chromosome-Karyogram-Extraction/}},
+}
+```
