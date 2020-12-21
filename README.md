@@ -6,18 +6,19 @@ A script to extract chromosomes from karyograms and save them individually or as
 
 ## Usage
 
-Three folders are needed: A source folder where the karyograms are located, a folder where the extracted chromosomes are going to be saved, and a fail folder that saves intermediate representations of the algorithm for failed extractions, which can be used to adapt the parameters or spot a genome with mutations. These paths have to be set in the `script.py` file. Afterwards, simply execute the script which will process all the images in the source folder automatically.
+Three folders are needed: A source folder where the karyograms are located, a folder where the extracted chromosomes are going to be saved, and a fail folder that saves intermediate representations of the algorithm for failed extractions, which can be used to adapt the parameters or spot a genome with mutations. Call it like this: `python3 karyogram_extraction/extract.py -s ./imgs/ -d ./extracted/ -f ./fails`
 
 #### Arguments:
 
-*Located in the beginning of the script:*
+**-s:** Path to image source folder.
 
-**pair:** True, if chromosome pairs are supposed to be extracted. False for single chromosomes.
+**-d:** Destination folder for extracted chromosomes.
 
-**min_volume:** The minimum pixel volume a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
+**-f:** Folder where failed images will be saved.
 
-**padding:** Padding around the chromosomes.
+**-pair:** True, if chromosome pairs are supposed to be extracted. False for single chromosomes.
 
+**-min_volume:** The minimum pixel volume a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
 
 
 ## Example
@@ -28,23 +29,21 @@ Here you can see some example for some successful and failed extractions. The im
 
 #### Karyogram
 
-![Mapa_genético_o_cariograma](./imgs/Mapa_genético_o_cariograma.jpeg)
+![karyo1](./imgs/karyo1.jpeg)
 
 #### Extracted chromosomes
 
 **Left chromosome 1**
 
-![1_1_Mapa_genético_o_cariograma](./extracted/1_1_Mapa_genético_o_cariograma.png)
+![1_1_karyo1](./extracted/1_1_karyo1.png)
 
 **Right X chromosome**
 
-![23_2_Mapa_genético_o_cariograma](./extracted/23_2_Mapa_genético_o_cariograma.png)
+![23_2_karyo1](./extracted/23_2_karyo1.png)
 
 ### Failed Extraction
 
 An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single $+$ and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find to find the optimal set of parameters for every type of chromosome.
-
-![NHGRI_human_male_karyotype](./fails/NHGRI_human_male_karyotype.png)
 
 
 
