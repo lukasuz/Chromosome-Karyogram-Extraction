@@ -6,7 +6,13 @@ A script to extract chromosomes from karyograms and save them individually or as
 
 ## Usage
 
-Three folders are needed: A source folder where the karyograms are located, a folder where the extracted chromosomes are going to be saved, and a fail folder that saves intermediate representations of the algorithm for failed extractions, which can be used to adapt the parameters or spot a genome with mutations. Call it like this: `python3 karyogram_extraction/extract.py -s ./imgs/ -d ./extracted/ -f ./fails`
+Three folders are needed: A source folder where the karyograms are located, a folder where the extracted chromosomes are going to be saved, and a fail folder that saves intermediate representations of the algorithm for failed extractions, which can be used to adapt the parameters or spot a genome with mutations. Call it like this: 
+
+```shell
+python3 karyogram_extraction/extract.py -s ./imgs/ -d ./extracted/ -f ./fails
+```
+
+
 
 #### Arguments:
 
@@ -18,7 +24,7 @@ Three folders are needed: A source folder where the karyograms are located, a fo
 
 **-pair:** True, if chromosome pairs are supposed to be extracted. False for single chromosomes.
 
-**-min_volume:** The minimum pixel volume a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
+**-min_area:** The minimum pixel area a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
 
 
 ## Example
@@ -55,7 +61,7 @@ An example of a failed extraction. We can see that chromosome three was detected
   - A is the chromosome number from 1 to 23, where no. 23 is either X or Y chromosome (no differentiation between both is currently done.)
   - B shows encodes if it is the left (=1) or the right (=2) chromosome of the pair. If chromosomes pairs are extracted B=12
   - CCCC the original karyogram file name where the chromosomes were extracted from
-  
+
  ## Citation
  If you find this project helpful, please cite as:
 ```
