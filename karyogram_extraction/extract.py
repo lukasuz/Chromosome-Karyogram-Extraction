@@ -14,7 +14,13 @@ opening_kernel = np.ones((3,3), np.uint8)
 # dilation_kernel = erosion_kernel
 
 def get_labels(path):
-    """ Read a chromosome image and returns its connected component labels mat
+    """ Read a chromosome image and returns its connected component labels matrix
+
+    Arguments:
+        path: path to image
+
+    Returns:
+        number of labels, labels
     """
     img = cv.imread(path, 0)
     # Thresholding seems
@@ -32,6 +38,10 @@ def get_labels(path):
 def make_one_hot_labels(num_labels, labels):
     """ Creates one hot representation of the labels, where each channel
         represents the label mat of a single label value
+
+    Arguments:
+        num_labels: number of connected component labels
+        labels: connected component labels
     """
     one_hot_labels = np.zeros((labels.shape[0], labels.shape[1], num_labels))
     for i in range(num_labels):
@@ -40,13 +50,21 @@ def make_one_hot_labels(num_labels, labels):
 
     return one_hot_labels
 
-def filter_labels(oh_labels, min_volume):
+def filter_labels(oh_labels, min_area):
     """ Filters the labels:
         - Thresholds the labels given a minimum volume value
         - removes background and the line at the bottom
+    
+    Arguments:
+        oh_labels: matrix of one hot connected component labels
+        min_area: minimum pixel are of a component
+
+    Returns:
+        Filtered one hot encoded connected component labels
+
     """
     pixels = oh_labels.shape[0] * oh_labels.shape[1]
-    thres = pixels * min_volume
+    thres = pixels * min_area
     indices = np.indices((oh_labels.shape[0], oh_labels.shape[1]))
 
     filtered_oh_labels = np.zeros_like(oh_labels)
@@ -67,6 +85,12 @@ def filter_labels(oh_labels, min_volume):
 
 def extract_label_centroids(oh_labels):
     """ Calculates the centroid of each one hotted label
+
+    Arguments:
+        oh_labels: matrix of one hot connected component labels
+
+    Returns:
+        A 2D array with component centroids
     """
     indices = np.indices((oh_labels.shape[0], oh_labels.shape[1]))
     centroids = np.zeros((2, oh_labels.shape[2]))
@@ -80,6 +104,14 @@ def extract_label_centroids(oh_labels):
 
 def order_components(oh_labels, centroids, structure=structure):
     """ Orders the components according to their chromosome number.
+
+    Arguments:
+        oh_labels: matrix of one hot connected component labels.
+        centroids: centroids of the connected components.
+        structure: arrangement of chromosomes on the image
+
+    Returns:
+        The ordered oh labels
     """
     
     ordered = np.zeros_like(oh_labels)
@@ -111,6 +143,12 @@ def order_components(oh_labels, centroids, structure=structure):
 
 def pair_components(oh_labels):
     """ Pairs two chromosome labels. Assumes sorted list and only two chromosome per num
+
+    Arguments:
+        oh_labels: matrix of one hot connected component labels
+
+    Returns:
+        paried oh_labels
     """
     paired = np.zeros((oh_labels.shape[0], oh_labels.shape[1], int(oh_labels.shape[2]/2)))
     for i in range(0, oh_labels.shape[2], 2):
@@ -119,6 +157,12 @@ def pair_components(oh_labels):
 
 def extract_bounding_boxes(oh_labels):
     """ Extracts the bounding box parameters for the chromosome labels
+
+    Arguments:
+        oh_labels: matrix of one hot connected component labels
+
+    Returns:
+        Numpy matrix of bounding box coordinates for each oh label
     """
     boxes = np.zeros((4, oh_labels.shape[2]), dtype="int")
     for i in range(0, oh_labels.shape[2]):
@@ -128,6 +172,12 @@ def extract_bounding_boxes(oh_labels):
 def extract_bounding_box(img):
     """ Extract the bounding box params for a binary mask.
         Found on: https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array
+
+    Arguments:
+        img: the image
+
+    Returns:
+        Bounding box for a single image
     """
     rows = np.any(img, axis=1)
     cols = np.any(img, axis=0)
@@ -138,6 +188,14 @@ def extract_bounding_box(img):
 
 def extract_and_save_chromsomes(path, bounding_boxes, oh_labels, paired, save_path, tags=chromosome_tags):
     """ Extracts chromosomes given an image path and bounding boxes
+
+    Arguments:
+        path: path to image
+        bounding_boxes: bounding boxes of each oh label.
+        oh_labels: matrix of one hot connected component labels.
+        paired: bool, whether chromosome pairs should be extracted in pairs
+        save_path: saving path
+        tags: chromosome class tags in a list
     """
     img = cv.imread(path)
     temp = path.split("/")[-1]
@@ -181,6 +239,14 @@ def extract_and_save_chromsomes(path, bounding_boxes, oh_labels, paired, save_pa
             cv.imwrite(file_path, chromosome)
 
 def get_max_bounding_box_dims(bounding_boxes):
+    """ Get the maximum bounding box dimensions for a set of bounding boxes.
+
+    Arguments:
+        bounding_boxes: Numpy matrix containing the bounding box parameters.
+
+    Returns:
+        The biggest bounding box across both dimensions
+    """
     max_x = 0
     max_y = 0
 
@@ -200,6 +266,16 @@ def get_max_bounding_box_dims(bounding_boxes):
     return max_x, max_y
 
 def pad_chromosome(chromosome, max_x, max_y):
+    """ Pads a chromosome images
+
+    Arguments:
+        chromosome: the chromosome iamge
+        max_x: maximum x dimension
+        max_y: maximum y dimenion
+
+    Returns:
+        The padded chromosome
+    """
     chrom_x = chromosome.shape[1]
     chrom_y = chromosome.shape[0]
 
@@ -213,14 +289,29 @@ def pad_chromosome(chromosome, max_x, max_y):
 
     return padded_chromosome
 
-def fail_save(one_hot_labels, centroids, path):
+def fail_save(oh_labels, centroids, path):
     """ Handler for images that have != 46 chromosomes, 
+
+    Arguments:
+        oh_labels: matrix of one hot connected component labels
+        centroids: oh label centroids
+        path: path to image
     """
     print("  46 Chromosome have have to be detected, but {0} were detected. " \
             "This could also be due to noise or letters in the image.".format(one_hot_labels.shape[2]))
-    visualise_components(one_hot_labels, show=False, save_path=path, centroids=centroids)
+    visualise_components(oh_labels, show=False, save_path=path, centroids=centroids)
 
 def visualise_components(labels, show=True, save_path=None, centroids=None, bounding_boxes=None):
+    """ Visualisation helper for intermediate results
+
+    Arguments:
+        labels: one hot encoded connected component labels
+        show: bool, save or show
+        save_path: save path
+        centroids: oh label centroids
+        bounding boxes: bounding boxes of each one hot encoded label
+
+    """
 
     bkg = np.sum(labels, axis=-1) == 0
     bkg = np.expand_dims(bkg, axis=-1)
@@ -265,10 +356,20 @@ def visualise_components(labels, show=True, save_path=None, centroids=None, boun
 
     plt.close()
 
-def process_chromosome(path, file_name, save_path, fail_path, pair=False, min_volume=0.0003):
+def process_chromosome(path, file_name, save_path, fail_path, pair=False, min_area=0.0003):
+    """ Saves extracted chromosomes from a karyogram image.
+
+    Arguments:
+        path: path to karyogram
+        file_name: file name of karyogram
+        save_path: where the extracted chromosomes shall be saved
+        fail_path: where the failed extractions visualisations will be save
+        pair: optional, bool, whether the chromosomes of one class shall be extracted in a paired manner
+        min_area: minimum pixel area of a chromosome (otherwise rejected)
+    """
     num_labels, labels_im = get_labels(path)
     one_hot_labels = make_one_hot_labels(num_labels, labels_im)
-    one_hot_labels = filter_labels(one_hot_labels, min_volume)
+    one_hot_labels = filter_labels(one_hot_labels, min_area)
     
     centroids = extract_label_centroids(one_hot_labels)
     
@@ -284,26 +385,35 @@ def process_chromosome(path, file_name, save_path, fail_path, pair=False, min_vo
 
     extract_and_save_chromsomes(path, bounding_boxes, oh_labels, pair, save_path)
 
-def process_chromosomes(img_path, save_path, fail_path, pair=False, min_volume=0.0003):
+def process_chromosomes(img_path, save_path, fail_path, pair=False, min_area=0.0003):
+    """ Saves extracted chromosomes from a karyogram image.
+
+    Arguments:
+        path: path to karyogram
+        save_path: where the extracted chromosomes shall be saved
+        fail_path: where the failed extractions visualisations will be save
+        pair: optional, bool, whether the chromosomes of one class shall be extracted in a paired manner
+        min_area: minimum pixel area of a chromosome (otherwise rejected)
+    """
     file_names = os.listdir(img_path)
     for name in file_names:
         print("Processing: " + str(name))
         file_path = os.path.join(img_path, name)
-        process_chromosome(file_path, name, save_path, fail_path, pair, min_volume)
+        process_chromosome(file_path, name, save_path, fail_path, pair, min_area)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Extracts chromosome from Karyogram images')
+    parser = argparse.ArgumentParser(description='Extracts chromosome from Karyogram image')
     parser.add_argument('-s', '--source', help='input folder', required=True)
     parser.add_argument('-d', '--dest', help='destination folder', required=True)
     parser.add_argument('-f', '--fails', help='folder for failed images', required=True)
     parser.add_argument('--pair', help='Whether chromosome pairs should be extracted', type=bool, nargs='?', default=False)
-    parser.add_argument('--min_volume', help='Minimum density of a chromosome in pixel percentage', type=float, nargs='?', default=0.0003)
+    parser.add_argument('--min_area', help='Minimum density of a chromosome in pixel percentage', type=float, nargs='?', default=0.0003)
 
     args = parser.parse_args()
     img_path = args.source
     save_path = args.dest
     fail_path = args.fails
     pair = args.pair
-    min_volume = args.min_volume
+    min_area = args.min_area
 
-    process_chromosomes(img_path, save_path, fail_path, pair, min_volume)
+    process_chromosomes(img_path, save_path, fail_path, pair, min_area)
