@@ -24,7 +24,7 @@ python3 karyogram_extraction/extract.py -s ./imgs/ -d ./extracted/ -f ./fails
 
 **-pair:** True, if chromosome pairs are supposed to be extracted. False for single chromosomes.
 
-**-min_area:** The minimum pixel area a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the images pixels.
+**-min_area:** The minimum pixel area a chromosome is supposed to have. Good for removing numbers, letters etc. Standard: a chromosome has to occupy $0.003\%$ of the pixels in an image.
 
 
 ## Example
@@ -49,8 +49,7 @@ Here you can see some example for some successful and failed extractions. The im
 
 ### Failed Extraction
 
-An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single + and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find to find the optimal set of parameters for every type of chromosome.
-
+An example of a failed extraction. We can see that chromosome three was detected as a single component, indicated by the single + and identical color. Resulting in only 45 single chromosomes being detected. Unfortunately, some of the chromosome are inseparable due to the employed methods here (Connected Component Analysis). The morphological kernel in this case could be adapted, however, this often results in splitting chromosomes elsewhere, which makes it hard to find the optimal set of parameters for every type of chromosome.
 
 
 ## Naming Convention
@@ -63,14 +62,13 @@ An example of a failed extraction. We can see that chromosome three was detected
   - CCCC the original karyogram file name where the chromosomes were extracted from
 
  ## Citation
- If you find this project helpful, please cite as:
+Check out or paper on how to conditionally generate chromosome images based on their banding patterns:
 ```
- @misc{UzolasKaryogram2020,
-  author = {Uzolas, L.},
-  title = {Chromosome-Karyogram-Extraction},
-  year = {2020},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/lukasuz/Chromosome-Karyogram-Extraction/}},
+@article{uzolas2021deep,
+  title={Deep Anomaly Generation: An Image Translation Approach of Synthesizing Abnormal Banded Chromosome Images},
+  author={Uzolas, Lukas and Rico, Javier and Coup{\'e}, Pierrick and SanMiguel, Juan C and Cserey, Gy{\"o}rgy},
+  journal={arXiv preprint arXiv:2109.09702},
+  year={2021}
 }
+
 ```
